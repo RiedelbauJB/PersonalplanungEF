@@ -52,25 +52,40 @@ export default function Board() {
   const assignedIds = new Set(zuweisungen.map(z => z.mitarbeiter_id));
   const unassigned = mitarbeiter.filter(m => !assignedIds.has(m.id));
 
-  async function handleDrop(e: any) {
-    const personId = e.active?.id;
-    const targetBaustelleId = e.over?.id;
-    if (!personId || !targetBaustelleId) return;
-    if (targetBaustelleId === 'unassigned') return; // Ignorieren fürs MVP
-    const person = mitarbeiter.find(m => m.id === personId);
-    if (!person) return;
-    const today = new Date();
-    const in7 = new Date(Date.now()+7*86400000);
-    const toISO = (d: Date) => d.toISOString().slice(0,10);
-    await supabase.from('zuweisung').insert({
-      baustelle_id: targetBaustelleId,
-      mitarbeiter_id: personId,
-      rolle: person.titel,
-      von: toISO(today),
-      bis: toISO(in7),
-    });
-    load();
+async function handleDrop(e: any) {
+  const personId = e.active?.id as string | undefined;
+  const targetBaustelleId = e.over?.id as string | undefined;
+  if (!personId || !targetBaustelleId) return;
+
+  // 👇 NEU: auf "Unzugeordnet" fallen lassen = alle aktuellen/künftigen Zuweisungen löschen
+  if (targetBaustelleId === 'unassigned') {
+    const today = new Date().toISOString().slice(0, 10);
+    await supabase
+      .from('zuweisung')
+      .delete()
+      .gte('bis', today)
+      .eq('mitarbeiter_id', personId);
+    return load();
   }
+
+  // Standard: in eine Baustelle ziehen = neue 7-Tage-Zuweisung anlegen
+  const person = mitarbeiter.find(m => m.id === personId);
+  if (!person) return;
+
+  const toISO = (d: Date) => d.toISOString().slice(0, 10);
+  const today = new Date();
+  const in7 = new Date(Date.now() + 7 * 86400000);
+
+  await supabase.from('zuweisung').insert({
+    baustelle_id: targetBaustelleId,
+    mitarbeiter_id: personId,
+    rolle: person.titel,
+    von: toISO(today),
+    bis: toISO(in7),
+  });
+
+  load();
+}
 
   return (
     <div>
