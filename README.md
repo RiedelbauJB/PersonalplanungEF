@@ -1,5 +1,4 @@
 
-
 # Personalplanung Starter (Next.js + Supabase)
 
 Kostenloser MVP für Bauleitungs-Personalplanung:
