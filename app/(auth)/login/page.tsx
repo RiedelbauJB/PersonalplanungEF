@@ -4,6 +4,7 @@ import { Auth } from '@supabase/auth-ui-react';
 import { ThemeSupa } from '@supabase/auth-ui-shared';
 import { useEffect, useState } from 'react';
 
+
 export default function LoginPage() {
   const [allowed, setAllowed] = useState<string[] | null>(null);
 
